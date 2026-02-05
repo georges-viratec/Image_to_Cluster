@@ -34,7 +34,7 @@
           kind: Deployment
           metadata:
             name: {{ app_name }}-app
-            namespace: {{ namespace }}
+            namespace: {{ k8s_namespace }}
             labels:
               app: {{ app_name }}
           spec:
@@ -69,7 +69,7 @@
           kind: Service
           metadata:
             name: {{ app_name }}-service
-            namespace: {{ namespace }}
+            namespace: {{ k8s_namespace }}
             labels:
               app: {{ app_name }}
           spec:

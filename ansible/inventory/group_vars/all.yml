@@ -2,7 +2,7 @@ cluster_name: lab
 image_name: custom-nginx-app
 image_tag: latest
 app_name: custom-nginx
-namespace: default
+k8s_namespace: default
 replicas: 2
 service_port: 80
 node_port: 30080
