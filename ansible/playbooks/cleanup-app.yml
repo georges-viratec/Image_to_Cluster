@@ -1,0 +1,22 @@
+---
+- name: Nettoyage de l'application Custom Nginx
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Supprimer le Deployment
+      shell: kubectl delete deployment {{ app_name }}-app --ignore-not-found=true
+      register: delete_deploy
+      
+    - name: Supprimer le Service
+      shell: kubectl delete service {{ app_name }}-service --ignore-not-found=true
+      register: delete_svc
+      
+    - name: Nettoyer les manifests temporaires
+      file:
+        path: /tmp/k8s-manifests
+        state: absent
+      
+    - name: Nettoyage terminé
+      debug:
+        msg: "L'application {{ app_name }} a été supprimée du cluster {{ cluster_name }}."

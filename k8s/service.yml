@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: custom-nginx-service
+  labels:
+    app: custom-nginx
+spec:
+  type: NodePort  # Port du node
+  selector:
+    app: custom-nginx
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    nodePort: 30080 # Port accessible depuis wan

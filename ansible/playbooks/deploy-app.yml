@@ -1,0 +1,122 @@
+---
+- name: Déploiement de l'application Custom Nginx sur K3d
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Vérifier que l'image Docker existe
+      shell: docker images | grep {{ image_name }}
+      register: image_check
+      failed_when: false
+      changed_when: false
+
+    - name: Échec si l'image n'existe pas
+      fail:
+        msg: "L'image {{ image_name }}:{{ image_tag }} n'existe pas. Buildez-la d'abord avec Packer."
+      when: image_check.rc != 0
+
+    - name: Import de l'image dans K3d
+      shell: k3d image import {{ image_name }}:{{ image_tag }} -c {{ cluster_name }}
+      register: import_result
+      changed_when: "'Imported' in import_result.stdout"
+
+    - name: Créer le répertoire temporaire pour les manifests
+      file:
+        path: /tmp/k8s-manifests
+        state: directory
+        mode: '0755'
+
+    - name: Générer le Deployment manifest
+      copy:
+        dest: /tmp/k8s-manifests/deployment.yml
+        content: |
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: {{ app_name }}-app
+            namespace: {{ namespace }}
+            labels:
+              app: {{ app_name }}
+          spec:
+            replicas: {{ replicas }}
+            selector:
+              matchLabels:
+                app: {{ app_name }}
+            template:
+              metadata:
+                labels:
+                  app: {{ app_name }}
+              spec:
+                containers:
+                - name: nginx
+                  image: {{ image_name }}:{{ image_tag }}
+                  imagePullPolicy: Never
+                  ports:
+                  - containerPort: {{ service_port }}
+                  resources:
+                    requests:
+                      memory: "64Mi"
+                      cpu: "100m"
+                    limits:
+                      memory: "128Mi"
+                      cpu: "200m"
+
+    - name: Générer le Service manifest
+      copy:
+        dest: /tmp/k8s-manifests/service.yml
+        content: |
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: {{ app_name }}-service
+            namespace: {{ namespace }}
+            labels:
+              app: {{ app_name }}
+          spec:
+            type: NodePort
+            selector:
+              app: {{ app_name }}
+            ports:
+            - protocol: TCP
+              port: {{ service_port }}
+              targetPort: {{ service_port }}
+              nodePort: {{ node_port }}
+
+    - name: Appliquer le Deployment
+      shell: kubectl apply -f /tmp/k8s-manifests/deployment.yml
+      register: deploy_result
+
+    - name: Appliquer le Service
+      shell: kubectl apply -f /tmp/k8s-manifests/service.yml
+      register: service_result
+
+    - name: Attendre que les pods soient prêts
+      shell: kubectl wait --for=condition=ready pod -l app={{ app_name }} --timeout=120s
+      register: wait_result
+      retries: 3
+      delay: 10
+      until: wait_result.rc == 0
+
+    - name: Afficher le statut des ressources
+      shell: |
+        echo "=== DEPLOYMENTS ==="
+        kubectl get deployments -l app={{ app_name }}
+        echo ""
+        echo "=== PODS ==="
+        kubectl get pods -l app={{ app_name }}
+        echo ""
+        echo "=== SERVICES ==="
+        kubectl get svc {{ app_name }}-service
+      register: status
+
+    - name: Afficher le résumé
+      debug:
+        msg: 
+          - "Déploiement réussi !"
+          - "Image: {{ image_name }}:{{ image_tag }}"
+          - "Replicas: {{ replicas }}"
+          - "Service: {{ app_name }}-service"
+          - "Port: {{ node_port }}"
+          - ""
+          - "Pour accéder à l'application:"
+          - "kubectl port-forward service/{{ app_name }}-service 8081:{{ service_port }}"

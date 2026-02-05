@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: custom-nginx-app
+  labels:
+    app: custom-nginx
+spec:
+  replicas: 2 # 2 instances
+  selector:
+    matchLabels:
+      app: custom-nginx
+  template:
+    metadata:
+      labels:
+        app: custom-nginx
+    spec:
+      containers:
+      - name: nginx
+        image: custom-nginx-app:latest
+        imagePullPolicy: Never  # utilise l'image locale
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
