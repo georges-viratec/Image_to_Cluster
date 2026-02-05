@@ -51,7 +51,7 @@ install: ## Installer Packer et Ansible
 		wget -q -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg; \
 		echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $$(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list > /dev/null; \
 		sudo apt update -qq && sudo apt install -y packer > /dev/null 2>&1; \
-		echo "$(YELLOW)⚙️  Installation d'Ansible...$(NC)"; \
+		echo "$(YELLOW)Installation d'Ansible...$(NC)"; \
 		sudo apt install -y software-properties-common > /dev/null 2>&1; \
 		sudo add-apt-repository --yes --update ppa:ansible/ansible > /dev/null 2>&1; \
 		sudo apt install -y ansible > /dev/null 2>&1; \
@@ -118,7 +118,7 @@ all: build import deploy status ## Exécuter le workflow complet (build + import
 ##@ Gestion du cluster
 
 setup-cluster: ## Créer le cluster K3d (1 master + 2 workers)
-	@echo "$(YELLOW)🏗️  Création du cluster K3d...$(NC)"
+	@echo "$(YELLOW)Création du cluster K3d...$(NC)"
 	@k3d cluster create $(CLUSTER_NAME) --servers 1 --agents 2
 	@echo "$(GREEN)Cluster $(CLUSTER_NAME) créé !$(NC)"
 	@kubectl get nodes
